@@ -1,0 +1,37 @@
+id: xss-reflected-basic
+
+info:
+  name: Reflected Cross-Site Scripting Detection
+  author: amit
+  severity: medium
+  description: >
+    Detects basic reflected XSS by injecting a unique payload into
+    query parameters and checking if it's reflected unescaped in the response.
+  tags: xss,vuln,generic
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/?q={{randstr}}<script>alert(1)</script>"
+      - "{{BaseURL}}/search?query={{randstr}}\"><svg onload=alert(1)>"
+      - "{{BaseURL}}?id={{randstr}}'><img src=x onerror=alert(1)>"
+
+    matchers-condition: and
+    matchers:
+      - type: word
+        part: body
+        words:
+          - "{{randstr}}<script>alert(1)</script>"
+          - "{{randstr}}\"><svg onload=alert(1)>"
+          - "{{randstr}}'><img src=x onerror=alert(1)>"
+        condition: or
+
+      - type: status
+        status:
+          - 200
+
+    extractors:
+      - type: regex
+        part: body
+        regex:
+          - "{{randstr}}.*"
